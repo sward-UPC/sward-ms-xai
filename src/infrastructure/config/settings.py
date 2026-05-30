@@ -10,6 +10,12 @@ class Settings(BaseSettings):
     eventbridge_bus_name: str = "sward-event-bus"
     environment: str = "development"
     service_name: str = "sward-ms-xai"
+    # Orígenes permitidos para CORS (configurables por entorno).
+    cors_allowed_origins: list[str] = ["http://localhost:5173"]
+
+    @property
+    def is_development(self) -> bool:
+        return self.environment == "development"
 
 
 settings = Settings()

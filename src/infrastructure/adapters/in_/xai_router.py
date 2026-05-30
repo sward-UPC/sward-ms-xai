@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 
 from src.application.use_cases.consultar_explicacion import (
     ConsultarExplicacionCommand,
@@ -21,14 +21,18 @@ router = APIRouter(prefix="/xai", tags=["XAI"])
 
 
 class PesoAtencionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     interaccion_referencia_id: UUID
-    peso: float
-    concepto: str
+    peso: float = Field(ge=0.0, le=1.0)
+    concepto: str = Field(max_length=255)
 
 
 class ExplainRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     recomendacion_id: UUID
-    pesos_atencion: list[PesoAtencionRequest]
+    pesos_atencion: list[PesoAtencionRequest] = Field(max_length=512)
 
 
 def _serialize(e: Explicacion) -> dict:
