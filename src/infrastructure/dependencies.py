@@ -2,6 +2,7 @@ from functools import lru_cache
 
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
+from sward_shared.auth import build_require_service_key
 
 from src.application.use_cases.consultar_explicacion import ConsultarExplicacionUseCase
 from src.application.use_cases.generar_explicacion import GenerarExplicacionUseCase
@@ -11,6 +12,9 @@ from src.infrastructure.adapters.out_.redis_adapter import RedisAdapter
 from src.infrastructure.adapters.out_.xai_postgres_adapter import XaiPostgresAdapter
 from src.infrastructure.config.settings import settings
 from src.infrastructure.db.database import get_session
+
+# Validación s2s: solo ms-recomendacion puede llamar a ms-xai.
+require_service_key = build_require_service_key(settings.authorized_service_keys_set)
 
 
 @lru_cache(maxsize=1)
