@@ -12,6 +12,21 @@ from src.infrastructure.config.settings import settings
 from src.infrastructure.db.database import engine
 from src.infrastructure.db.models.xai_models import Base
 
+logger = logging.getLogger(__name__)
+
+
+async def _init_db() -> None:
+    for intento in range(10):
+        try:
+            async with engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+            logger.info("Base de datos lista.")
+            return
+        except Exception as exc:
+            logger.warning("BD no disponible (intento %d/10): %s", intento + 1, exc)
+            await asyncio.sleep(5)
+    logger.error("No se pudo conectar a la BD tras 10 intentos.")
+
 
 async def _init_db() -> None:
     for intento in range(10):
@@ -32,8 +47,6 @@ async def lifespan(app: FastAPI):
     yield
     await engine.dispose()
 
-
-logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="SWARD — Microservicio de Explicabilidad (XAI)",
