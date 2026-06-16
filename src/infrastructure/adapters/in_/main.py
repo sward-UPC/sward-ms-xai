@@ -51,6 +51,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="SWARD — Microservicio de Explicabilidad (XAI)",
     version="0.1.0",
+    openapi_url="/xai/openapi.json",
     description=(
         "Genera explicaciones interpretables (XAI) de las recomendaciones y "
         "predicciones del modelo, aportando transparencia a los usuarios de SWARD."
