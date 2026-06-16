@@ -11,7 +11,8 @@ jobs:
     with:
       image_name: sward-ms-xai
       service_type: microservice
-      aws_service_name: sward-ms-xai
+      aws_service_name: xai
       aws_cluster_name: sward-cluster
       needs_shared: true
     secrets: inherit
+
