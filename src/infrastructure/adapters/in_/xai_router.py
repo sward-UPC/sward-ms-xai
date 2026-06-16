@@ -15,6 +15,7 @@ from src.domain.entities.explicacion import Explicacion
 from src.infrastructure.dependencies import (
     get_consultar_explicacion_uc,
     get_generar_explicacion_uc,
+    require_service_key,
 )
 
 router = APIRouter(prefix="/xai", tags=["XAI"])
@@ -201,6 +202,7 @@ def _serialize(e: Explicacion) -> ExplicacionResponse:
 )
 async def explain(
     body: ExplainRequest,
+    _: None = Depends(require_service_key),
     uc: GenerarExplicacionUseCase = Depends(get_generar_explicacion_uc),
 ):
     """
@@ -242,6 +244,7 @@ async def explain(
 )
 async def get_explanation(
     recomendacion_id: UUID,
+    _: None = Depends(require_service_key),
     uc: ConsultarExplicacionUseCase = Depends(get_consultar_explicacion_uc),
 ):
     """
