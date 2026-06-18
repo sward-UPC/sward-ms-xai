@@ -3,6 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
 
+from src.application.use_cases.consultar_alertas import ConsultarAlertasUseCase
 from src.application.use_cases.consultar_explicacion import (
     ConsultarExplicacionCommand,
     ConsultarExplicacionUseCase,
@@ -13,12 +14,51 @@ from src.application.use_cases.generar_explicacion import (
 )
 from src.domain.entities.explicacion import Explicacion
 from src.infrastructure.dependencies import (
+    get_consultar_alertas_uc,
     get_consultar_explicacion_uc,
     get_generar_explicacion_uc,
+    require_jwt,
     require_service_key,
 )
 
 router = APIRouter(prefix="/xai", tags=["XAI"])
+
+
+class AlertaResponse(BaseModel):
+    """Alerta de riesgo académico para el dashboard docente."""
+
+    id: str
+    estudiante_id: str
+    curso_id: str
+    nivel_riesgo: str
+    mensaje: str
+    creada_en: str
+
+
+@router.get("/alerts", summary="Alertas de riesgo del curso (docente)")
+async def listar_alertas(
+    courseId: UUID,  # noqa: N803 (contrato camelCase con el frontend)
+    _user: dict = Depends(require_jwt),
+    uc: ConsultarAlertasUseCase = Depends(get_consultar_alertas_uc),
+) -> list[AlertaResponse]:
+    """Lista las alertas de riesgo académico de un curso, más recientes primero.
+
+    Las genera `sward-lambda-alertas`; aquí solo se leen para el docente.
+
+    **Auth:** JWT
+    """
+    alertas = await uc.execute(courseId)
+    return [
+        AlertaResponse(
+            id=str(a.id),
+            estudiante_id=str(a.estudiante_id),
+            curso_id=str(a.curso_id),
+            nivel_riesgo=a.nivel_riesgo,
+            mensaje=a.mensaje,
+            creada_en=a.creada_en.isoformat(),
+        )
+        for a in alertas
+    ]
 
 
 class PesoAtencionRequest(BaseModel):
