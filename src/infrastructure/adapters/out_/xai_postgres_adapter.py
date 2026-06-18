@@ -4,13 +4,14 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.domain.entities.alerta_academica import AlertaAcademica
 from src.domain.entities.explicacion import (
     EvidenciaExplicativa,
     Explicacion,
     PesoAtencion,
 )
 from src.domain.ports.out_.xai_repository_port import XaiRepositoryPort
-from src.infrastructure.db.models.xai_models import ExplanationModel
+from src.infrastructure.db.models.xai_models import AlertModel, ExplanationModel
 
 
 class XaiPostgresAdapter(XaiRepositoryPort):
@@ -56,6 +57,24 @@ class XaiPostgresAdapter(XaiRepositoryPort):
         )
         m = res.scalar_one_or_none()
         return _to_entity(m) if m else None
+
+    async def find_alertas_por_curso(self, curso_id: UUID) -> list[AlertaAcademica]:
+        res = await self._s.execute(
+            select(AlertModel)
+            .where(AlertModel.curso_id == curso_id)
+            .order_by(AlertModel.creada_en.desc())
+        )
+        return [
+            AlertaAcademica(
+                id=m.id,
+                estudiante_id=m.estudiante_id,
+                curso_id=m.curso_id,
+                nivel_riesgo=m.nivel_riesgo,
+                mensaje=m.mensaje,
+                creada_en=m.creada_en,
+            )
+            for m in res.scalars().all()
+        ]
 
 
 def _to_entity(m: ExplanationModel) -> Explicacion:
