@@ -8,7 +8,7 @@ async def test_scalar_responde_200(anon_client):
 
 
 async def test_openapi_json_responde_200(anon_client):
-    resp = await anon_client.get("/xai/openapi.json")
+    resp = await anon_client.get("/openapi.json")
     assert resp.status_code == 200
     body = resp.json()
     assert body["info"]["title"] == "SWARD — Microservicio de Explicabilidad (XAI)"
