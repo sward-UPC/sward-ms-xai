@@ -2,8 +2,9 @@ from functools import lru_cache
 
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from sward_shared.auth import build_require_service_key
+from sward_shared.auth import build_require_jwt, build_require_service_key
 
+from src.application.use_cases.consultar_alertas import ConsultarAlertasUseCase
 from src.application.use_cases.consultar_explicacion import ConsultarExplicacionUseCase
 from src.application.use_cases.generar_explicacion import GenerarExplicacionUseCase
 from src.domain.services.motor_explicabilidad import MotorExplicabilidad
@@ -13,8 +14,16 @@ from src.infrastructure.adapters.out_.xai_postgres_adapter import XaiPostgresAda
 from src.infrastructure.config.settings import settings
 from src.infrastructure.db.database import get_session
 
-# Validación s2s: solo ms-recomendacion puede llamar a ms-xai.
+# Validación s2s: solo ms-recomendacion puede llamar a los endpoints internos.
 require_service_key = build_require_service_key(settings.authorized_service_keys_set)
+# Validación JWT para endpoints de lectura del docente (p.ej. alertas).
+require_jwt = build_require_jwt(settings.secret_key, algorithm=settings.jwt_algorithm)
+
+
+def get_consultar_alertas_uc(
+    session: AsyncSession = Depends(get_session),
+) -> ConsultarAlertasUseCase:
+    return ConsultarAlertasUseCase(XaiPostgresAdapter(session))
 
 
 @lru_cache(maxsize=1)
