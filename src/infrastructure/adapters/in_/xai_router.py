@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from pydantic import BaseModel, ConfigDict, Field
 
 from src.application.use_cases.consultar_alertas import ConsultarAlertasUseCase
@@ -13,6 +13,7 @@ from src.application.use_cases.generar_explicacion import (
     GenerarExplicacionUseCase,
 )
 from src.domain.entities.explicacion import Explicacion
+from src.domain.errors import NotFoundError
 from src.infrastructure.dependencies import (
     get_consultar_alertas_uc,
     get_consultar_explicacion_uc,
@@ -258,18 +259,13 @@ async def explain(
 
     **Autenticación:** Bearer JWT (requerido)
     """
-    try:
-        explicacion = await uc.execute(
-            GenerarExplicacionCommand(
-                recomendacion_id=body.recomendacion_id,
-                pesos_atencion=[p.model_dump() for p in body.pesos_atencion],
-            )
+    explicacion = await uc.execute(
+        GenerarExplicacionCommand(
+            recomendacion_id=body.recomendacion_id,
+            pesos_atencion=[p.model_dump() for p in body.pesos_atencion],
         )
-        return _serialize(explicacion)
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-    except KeyError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    )
+    return _serialize(explicacion)
 
 
 @router.get(
@@ -298,32 +294,23 @@ async def get_explanation(
 
     **Autenticación:** Bearer JWT (requerido)
     """
-    try:
-        explicacion = await uc.execute(
-            ConsultarExplicacionCommand(recomendacion_id=recomendacion_id)
-        )
-        if explicacion is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Explicación no encontrada",
+    explicacion = await uc.execute(
+        ConsultarExplicacionCommand(recomendacion_id=recomendacion_id)
+    )
+    if explicacion is None:
+        raise NotFoundError("Explicación no encontrada")
+    return ConsultarExplicacionResponse(
+        id=str(explicacion.id),
+        recomendacion_id=str(explicacion.recomendacion_id),
+        resumen=explicacion.resumen,
+        detalle=explicacion.detalle,
+        evidencias=[
+            EvidenciaResponse(
+                tipo=ev.tipo,
+                descripcion=ev.descripcion,
+                impacto=ev.impacto,
             )
-        return ConsultarExplicacionResponse(
-            id=str(explicacion.id),
-            recomendacion_id=str(explicacion.recomendacion_id),
-            resumen=explicacion.resumen,
-            detalle=explicacion.detalle,
-            evidencias=[
-                EvidenciaResponse(
-                    tipo=ev.tipo,
-                    descripcion=ev.descripcion,
-                    impacto=ev.impacto,
-                )
-                for ev in explicacion.evidencias
-            ],
-            fecha_generacion=explicacion.fecha_generacion.isoformat(),
-        )
-    except KeyError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(e),
-        )
+            for ev in explicacion.evidencias
+        ],
+        fecha_generacion=explicacion.fecha_generacion.isoformat(),
+    )
