@@ -10,7 +10,7 @@ from src.domain.entities.explicacion import (
     Explicacion,
     PesoAtencion,
 )
-from src.domain.ports.out_.xai_repository_port import XaiRepositoryPort
+from src.application.ports.out_.xai_repository_port import XaiRepositoryPort
 from src.infrastructure.db.models.xai_models import AlertModel, ExplanationModel
 
 
