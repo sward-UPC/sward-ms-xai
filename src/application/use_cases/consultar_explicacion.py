@@ -1,6 +1,10 @@
 from dataclasses import dataclass
 from uuid import UUID
 
+from src.application.use_cases.explicacion_mappers import (
+    explicacion_from_dict,
+    explicacion_to_dict,
+)
 from src.domain.entities.explicacion import Explicacion
 from src.domain.ports.out_.cache_port import CachePort
 from src.domain.ports.out_.xai_repository_port import XaiRepositoryPort
@@ -30,41 +34,11 @@ class ConsultarExplicacionUseCase:
     async def execute(self, cmd: ConsultarExplicacionCommand) -> Explicacion | None:
         cacheada = await self._cache.get_explicacion(cmd.recomendacion_id)
         if cacheada is not None:
-            return _from_dict(cacheada)
+            return explicacion_from_dict(cacheada)
 
         explicacion = await self._repo.find_by_recomendacion(cmd.recomendacion_id)
         if explicacion is not None:
             await self._cache.set_explicacion(
-                cmd.recomendacion_id, _to_dict(explicacion), self._cache_ttl
+                cmd.recomendacion_id, explicacion_to_dict(explicacion), self._cache_ttl
             )
         return explicacion
-
-
-def _to_dict(e: Explicacion) -> dict:
-    return {
-        "id": str(e.id),
-        "recomendacion_id": str(e.recomendacion_id),
-        "resumen": e.resumen,
-        "detalle": e.detalle,
-        "evidencias": [
-            {"tipo": ev.tipo, "descripcion": ev.descripcion, "impacto": ev.impacto}
-            for ev in e.evidencias
-        ],
-        "fecha_generacion": e.fecha_generacion.isoformat(),
-    }
-
-
-def _from_dict(d: dict) -> Explicacion:
-    from datetime import datetime
-    from uuid import UUID as _UUID
-
-    from src.domain.entities.explicacion import EvidenciaExplicativa
-
-    return Explicacion(
-        id=_UUID(d["id"]),
-        recomendacion_id=_UUID(d["recomendacion_id"]),
-        resumen=d["resumen"],
-        detalle=d["detalle"],
-        evidencias=[EvidenciaExplicativa(**ev) for ev in d.get("evidencias", [])],
-        fecha_generacion=datetime.fromisoformat(d["fecha_generacion"]),
-    )

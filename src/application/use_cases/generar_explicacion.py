@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from uuid import UUID
 
+from src.application.use_cases.explicacion_mappers import explicacion_to_dict
 from src.domain.entities.explicacion import Explicacion, PesoAtencion
 from src.domain.events.explicacion_generada_event import ExplicacionGeneradaEvent
 from src.domain.ports.out_.cache_port import CachePort
@@ -57,7 +58,7 @@ class GenerarExplicacionUseCase:
         )
         guardada = await self._repo.save(explicacion)
         await self._cache.set_explicacion(
-            cmd.recomendacion_id, _to_dict(guardada), self._cache_ttl
+            cmd.recomendacion_id, explicacion_to_dict(guardada), self._cache_ttl
         )
         self._event_publisher.publish(
             ExplicacionGeneradaEvent(
@@ -66,17 +67,3 @@ class GenerarExplicacionUseCase:
             )
         )
         return guardada
-
-
-def _to_dict(e: Explicacion) -> dict:
-    return {
-        "id": str(e.id),
-        "recomendacion_id": str(e.recomendacion_id),
-        "resumen": e.resumen,
-        "detalle": e.detalle,
-        "evidencias": [
-            {"tipo": ev.tipo, "descripcion": ev.descripcion, "impacto": ev.impacto}
-            for ev in e.evidencias
-        ],
-        "fecha_generacion": e.fecha_generacion.isoformat(),
-    }
