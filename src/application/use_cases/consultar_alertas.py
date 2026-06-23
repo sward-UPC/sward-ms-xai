@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from src.domain.entities.alerta_academica import AlertaAcademica
-from src.domain.ports.out_.xai_repository_port import XaiRepositoryPort
+from src.application.ports.out_.xai_repository_port import XaiRepositoryPort
 
 
 class ConsultarAlertasUseCase:

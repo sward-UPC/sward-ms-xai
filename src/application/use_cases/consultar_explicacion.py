@@ -5,9 +5,10 @@ from src.application.use_cases.explicacion_mappers import (
     explicacion_from_dict,
     explicacion_to_dict,
 )
+from src.application.ports.out_.cache_port import CachePort
+from src.application.ports.out_.xai_repository_port import XaiRepositoryPort
 from src.domain.entities.explicacion import Explicacion
-from src.domain.ports.out_.cache_port import CachePort
-from src.domain.ports.out_.xai_repository_port import XaiRepositoryPort
+from src.domain.errors import NotFoundError
 
 
 @dataclass
@@ -31,14 +32,15 @@ class ConsultarExplicacionUseCase:
         self._cache = cache
         self._cache_ttl = cache_ttl
 
-    async def execute(self, cmd: ConsultarExplicacionCommand) -> Explicacion | None:
+    async def execute(self, cmd: ConsultarExplicacionCommand) -> Explicacion:
         cacheada = await self._cache.get_explicacion(cmd.recomendacion_id)
         if cacheada is not None:
             return explicacion_from_dict(cacheada)
 
         explicacion = await self._repo.find_by_recomendacion(cmd.recomendacion_id)
-        if explicacion is not None:
-            await self._cache.set_explicacion(
-                cmd.recomendacion_id, explicacion_to_dict(explicacion), self._cache_ttl
-            )
+        if explicacion is None:
+            raise NotFoundError("Explicación no encontrada")
+        await self._cache.set_explicacion(
+            cmd.recomendacion_id, explicacion_to_dict(explicacion), self._cache_ttl
+        )
         return explicacion
