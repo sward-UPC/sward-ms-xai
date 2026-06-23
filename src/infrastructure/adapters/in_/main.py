@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from scalar_fastapi import get_scalar_api_reference
 
+from src.domain.errors import DomainError, NotFoundError, ValidationError
 from src.infrastructure.adapters.in_.xai_router import router
 from src.infrastructure.config.settings import settings
 from src.infrastructure.db.database import engine
@@ -85,6 +86,23 @@ async def security_headers(request: Request, call_next):
             "max-age=31536000; includeSubDomains"
         )
     return response
+
+
+# Traducción centralizada de errores de dominio a HTTP. Los casos de uso y el
+# dominio lanzan ``DomainError``; el borde HTTP es el único que conoce códigos.
+_DOMAIN_ERROR_STATUS: dict[type[DomainError], int] = {
+    NotFoundError: 404,
+    ValidationError: 400,
+}
+
+
+@app.exception_handler(DomainError)
+async def domain_error_handler(request: Request, exc: DomainError):
+    status_code = next(
+        (code for tipo, code in _DOMAIN_ERROR_STATUS.items() if isinstance(exc, tipo)),
+        400,
+    )
+    return JSONResponse(status_code=status_code, content={"detail": str(exc)})
 
 
 @app.exception_handler(Exception)
