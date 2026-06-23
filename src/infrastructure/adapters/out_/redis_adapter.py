@@ -3,7 +3,7 @@ from uuid import UUID
 
 import redis.asyncio as redis
 
-from src.domain.ports.out_.cache_port import CachePort
+from src.application.ports.out_.cache_port import CachePort
 
 
 class RedisAdapter(CachePort):
