@@ -4,9 +4,9 @@ from uuid import UUID
 from src.application.use_cases.explicacion_mappers import explicacion_to_dict
 from src.domain.entities.explicacion import Explicacion, PesoAtencion
 from src.domain.events.explicacion_generada_event import ExplicacionGeneradaEvent
-from src.domain.ports.out_.cache_port import CachePort
-from src.domain.ports.out_.event_publisher_port import EventPublisherPort
-from src.domain.ports.out_.xai_repository_port import XaiRepositoryPort
+from src.application.ports.out_.cache_port import CachePort
+from src.application.ports.out_.event_publisher_port import EventPublisherPort
+from src.application.ports.out_.xai_repository_port import XaiRepositoryPort
 from src.domain.services.motor_explicabilidad import MotorExplicabilidad
 
 
