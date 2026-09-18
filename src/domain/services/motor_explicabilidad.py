@@ -4,9 +4,12 @@ from src.domain.entities.explicacion import EvidenciaExplicativa, PesoAtencion
 class MotorExplicabilidad:
     """Convierte los pesos de atención del modelo SAKT en lenguaje natural.
 
-    En modo desarrollo funciona con lógica simple (sin LLM): ordena los pesos
-    de mayor a menor influencia y construye una explicación legible para el
-    estudiante.
+    Ordena los pesos de mayor a menor y describe dónde se fijó el modelo. No usa
+    «se basa», «influye» ni «influencia»: la atención de SAKT, medida con ERASER
+    en la tesis, resultó suficiente pero no necesaria. Lo más atendido basta para
+    llegar a la predicción, pero no es su causa, y un texto causal afirmaría más
+    de lo que se comprobó. Por eso el peso se nombra como lo que es: una parte de
+    la atención.
     """
 
     def generar_texto(self, pesos: list[PesoAtencion]) -> str:
@@ -15,14 +18,26 @@ class MotorExplicabilidad:
         ordenados = sorted(pesos, key=lambda p: p.peso, reverse=True)
         principal = ordenados[0]
         texto = (
-            "Esta recomendación se basa principalmente en tu desempeño en "
-            f"{principal.concepto} (influencia {principal.peso:.0%})"
+            "Al estimar tu siguiente paso, el modelo prestó más atención a tu "
+            f"interacción en {principal.concepto} ({principal.peso:.0%} de la atención)"
         )
-        secundarios = ordenados[1:3]
+        # Varias interacciones pueden ser del mismo concepto: se nombra cada
+        # concepto una sola vez, con su interacción más atendida.
+        vistos = {principal.concepto}
+        secundarios = []
+        for p in ordenados[1:]:
+            if p.concepto not in vistos:
+                vistos.add(p.concepto)
+                secundarios.append(p)
+            if len(secundarios) == 2:
+                break
         if secundarios:
             extra = ", ".join(f"{p.concepto} ({p.peso:.0%})" for p in secundarios)
-            texto += f". También influyen: {extra}"
-        return texto + "."
+            texto += f". Le siguen: {extra}"
+        return (
+            texto + ". La atención muestra dónde se fijó el modelo, no la causa de "
+            "la recomendación."
+        )
 
     def generar_evidencias(
         self, pesos: list[PesoAtencion]
@@ -31,7 +46,7 @@ class MotorExplicabilidad:
         return [
             EvidenciaExplicativa(
                 tipo="peso_atencion",
-                descripcion=f"Concepto '{p.concepto}' con influencia {p.peso:.0%}",
+                descripcion=f"Concepto '{p.concepto}' con {p.peso:.0%} de la atención",
                 impacto=p.peso,
             )
             for p in ordenados
