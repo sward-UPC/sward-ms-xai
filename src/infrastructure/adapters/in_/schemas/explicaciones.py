@@ -43,7 +43,7 @@ class ExplainRequest(BaseModel):
     pesos_atencion: list[PesoAtencionRequest] = Field(
         ...,
         max_length=512,
-        description="Pesos de atención para factores de influencia",
+        description="Pesos de atención del SAKT sobre las interacciones pasadas",
         min_length=1,
     )
 
@@ -99,7 +99,7 @@ class ExplicacionResponse(BaseModel):
     )
     detalle: str = Field(
         ...,
-        description="Análisis detallado con factores de influencia",
+        description="Análisis detallado con los pesos de atención",
         json_schema_extra={
             "example": "Basado en análisis SAKT de interacciones: Algoritmos 0.92, Estructuras 0.78..."
         },
